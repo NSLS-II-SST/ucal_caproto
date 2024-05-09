@@ -13,7 +13,7 @@ parser.add_argument('--overwrite', action='store_true')
 
 args = parser.parse_args()
 
-address = "10.66.48.41"
+address = "172.31.133.40"
 sub_port= 5504
 
 ctx = zmq.Context()
@@ -26,6 +26,8 @@ dt1 = np.dtype([('channum', np.uint16), ('header version', np.uint16), ('presamp
 def take_data(npulses):
     data = {}
     for n in range(npulses):
+        if n%10000 == 0:
+            print(f"Collected {n} pulses")
         msg = socket.recv_multipart()
         summary = np.frombuffer(msg[0], dtype=dt1)
         channum = summary['channum'][0]

@@ -1,8 +1,8 @@
 """
 export EPICS_CA_AUTO_ADDR_LIST=no
 export EPICS_CAS_AUTO_BEACON_ADDR_LIST=no
-export EPICS_CAS_BEACON_ADDR_LIST=10.66.51.255
-export EPICS_CA_ADDR_LIST=10.66.51.255
+export EPICS_CAS_BEACON_ADDR_LIST=""
+export EPICS_CA_ADDR_LIST=""
 """
 
 
@@ -36,7 +36,7 @@ class MCA(PVGroup):
     ACQUIRE = pvproperty(value=0, doc="ACQUIRE")
     LOAD_CAL = pvproperty(value=0)
 
-    def __init__(self, *args, address="10.66.48.41", sub_port=5504,  **kwargs):
+    def __init__(self, *args, address="172.31.133.40", sub_port=5504,  **kwargs):
         self.address = address
         self.sub_port = sub_port
         self.ctx = zmq.asyncio.Context()
@@ -150,7 +150,7 @@ class MCA(PVGroup):
             return -1    
 
 if __name__ == "__main__":
-    ioc_options, run_options = ioc_arg_parser(default_prefix="XF:07ID-ES{{UCAL:ROIS}}:",
+    ioc_options, run_options = ioc_arg_parser(default_prefix="AXSYS-TES{{UCAL:ROIS}}:",
                                               desc = dedent(MCA.__doc__),
                                               supported_async_libs=('asyncio',))
     ioc = MCA(**ioc_options)
