@@ -17,6 +17,7 @@ import json
 import numpy as np
 import pickle
 from os.path import exists
+from rough_calibration import *
 
 class MCA(PVGroup):
     """
@@ -50,6 +51,9 @@ class MCA(PVGroup):
         self._cal_file_name = "cal_dict.pkl"
         self._cal_loaded = False
         self._poly_dict = {}
+        self._cal_data = {}
+        self._acquire_cal = 0
+        
         self._bins = np.linspace(self.DEFAULT_LLIM, self.DEFAULT_ULIM, self.DEFAULT_NBINS + 1)
         super().__init__(*args, **kwargs)
 
@@ -97,6 +101,25 @@ class MCA(PVGroup):
         if value != 0:
             self.load_cal_file(self._cal_file_name)
 
+    @MAKE_CAL.putter
+    async def MAKE_CAL(self, instance, value):
+        self._cal_data = {}
+        self._cal_pulses = 0
+        self._acquire_cal = 1
+        await instance.write(1, verify_value=False)
+        while self.ACQUIRE.value != 0 and self._cal_pulses < value:
+            await asyncio.sleep(5)
+            print(self._cal_pulses)
+        self._acquire_cal = 0
+        energies = get_line_energies(['ck', 'nk', 'ok', 'fela', 'nila', 'cula'])
+        cal_dict = make_cal_dict(self._cal_data, len(energies))
+        cal_dict['energies'] = energies
+        with open(self._cal_file_name, 'wb') as f:
+            pickle.dump(cal_dict, f)
+        self.load_cal_file(self._cal_file_name)
+        return 0
+
+            
     @CENTERS.startup
     async def CENTERS(self, instance, async_lib):
         centers = (self._bins[1:] + self._bins[:-1])*0.5
@@ -134,6 +157,12 @@ class MCA(PVGroup):
                 #if data['channum'] == 1:
                 e = self.convert_to_energy(data)
                 self._buffer.append(e)
+            if self.MAKE_CAL.value != 0 and self._acquire_cal != 0:
+                channum = data['channum'][0]
+                if channum not in self._cal_data:
+                    data[channum] = []
+                self._cal_data[channum].append(data['pulseRMS'][0])
+                self._cal_pulses += 1
 
     def decode_msg(self, msg):
         summaries = np.frombuffer(msg[0], dtype=self._dt1)
