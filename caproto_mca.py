@@ -36,6 +36,7 @@ class MCA(PVGroup):
     COUNT_TIME = pvproperty(value=1.0, record='ai', doc='ROI Count Time')
     ACQUIRE = pvproperty(value=0, doc="ACQUIRE")
     LOAD_CAL = pvproperty(value=0)
+    MAKE_CAL = pvproperty(value=0)
 
     def __init__(self, *args, address="10.66.48.41", sub_port=5504,  **kwargs):
         self.address = address
@@ -106,8 +107,9 @@ class MCA(PVGroup):
         self._cal_data = {}
         self._cal_pulses = 0
         self._acquire_cal = 1
-        await instance.write(1, verify_value=False)
-        while self.ACQUIRE.value != 0 and self._cal_pulses < value:
+        await instance.write(value, verify_value=False)
+        print("In make cal")
+        while self._cal_pulses < value:
             await asyncio.sleep(5)
             print(self._cal_pulses)
         self._acquire_cal = 0
@@ -160,7 +162,7 @@ class MCA(PVGroup):
             if self.MAKE_CAL.value != 0 and self._acquire_cal != 0:
                 channum = data['channum'][0]
                 if channum not in self._cal_data:
-                    data[channum] = []
+                    self._cal_data[channum] = []
                 self._cal_data[channum].append(data['pulseRMS'][0])
                 self._cal_pulses += 1
 
